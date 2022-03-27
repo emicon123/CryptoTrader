@@ -1,27 +1,38 @@
 package pl.szczyrba.crypto.service;
 
-import pl.szczyrba.crypto.model.Currency;
+import com.google.gson.Gson;
+import pl.szczyrba.crypto.model.exchange.Exchange;
+import pl.szczyrba.crypto.model.exchange.ExchangeResult;
+import pl.szczyrba.crypto.model.Record;
+import pl.szczyrba.crypto.model.exchange.ExchangeOutput;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class ExchangeService {
+public record ExchangeService(Exchange exchange) {
 
-    private Currency fromCurrency;
-    private List<Currency> toCurrencies;
-    private double amount;
+    public String exchangeCurrencies() {
 
-    public ExchangeService(Currency fromCurrency, List<Currency> toCurrencies, double amount) {
-        this.fromCurrency = fromCurrency;
-        this.toCurrencies = toCurrencies;
-        this.amount = amount;
+        Record record = getRecordsForExchange();
+        Map<String, ExchangeResult> exchangeResults = calculateExchangeResults(record);
+
+        return new Gson().toJson(new ExchangeOutput(exchange.getFrom(), exchangeResults));
     }
 
-    public ExchangeService(Currency fromCurrency, List<Currency> toCurrencies) {
-        this.fromCurrency = fromCurrency;
-        this.toCurrencies = toCurrencies;
+    private Record getRecordsForExchange() {
+        Map<String, Double> records = new HashMap<>();
+        exchange.getTo().forEach(e -> records.put(e, BinanceRestService.getRate(exchange.getFrom() + e).getPrice()));
+
+        return new Record(exchange.getFrom(), records);
     }
 
-    public void exchangeCurrencies() {
-        fromCurrency.getPrice();
+    private Map<String, ExchangeResult> calculateExchangeResults(Record record) {
+        Map<String, ExchangeResult> exchangeResults = new HashMap<>();
+        record.getRates().forEach((k, v) -> {
+            double exchangeResult = v * exchange.getAmount();
+            double exchangeFee = exchangeResult * 0.01;
+            exchangeResults.put(k, new ExchangeResult(v, exchange.getAmount(), exchangeResult, exchangeFee));
+        });
+        return exchangeResults;
     }
 }
