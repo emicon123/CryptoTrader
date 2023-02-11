@@ -33,4 +33,9 @@ public class CryptoCurrenciesController {
     public String exchangeCurrencies(@RequestBody Exchange exchangeData) {
         return new ExchangeService(exchangeData).exchangeCurrencies();
     }
+
+    @PostMapping("/exchange")
+    public String exchangeCurrencies(@RequestBody Exchange exchangeData) {
+        return new ExchangeService(exchangeData).getCurrencyRates();
+    }
 }
